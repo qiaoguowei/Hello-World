@@ -1,0 +1,147 @@
+SCANDIR(3)                                    Linux Programmer's Manual                                   SCANDIR(3)
+
+NAME
+       scandir, scandirat, alphasort, versionsort - scan a directory for matching entries
+
+SYNOPSIS
+       #include <dirent.h>
+
+       int scandir(const char *dirp, struct dirent ***namelist,
+              int (*filter)(const struct dirent *),
+              int (*compar)(const struct dirent **, const struct dirent **));
+
+       int alphasort(const struct dirent **a, const struct dirent **b);
+
+       int versionsort(const struct dirent **a, const struct dirent **b);
+
+       #include <fcntl.h>          /* Definition of AT_* constants */
+       #include <dirent.h>
+
+       int scandirat(int dirfd, const char *dirp, struct dirent ***namelist,
+              int (*filter)(const struct dirent *),
+              int (*compar)(const struct dirent **, const struct dirent **));
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       scandir(), alphasort():
+           /* Since glibc 2.10: */ _POSIX_C_SOURCE >= 200809L
+               || /* Glibc versions <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       versionsort(): _GNU_SOURCE
+
+       scandirat(): _GNU_SOURCE
+
+DESCRIPTION
+       The scandir() function scans the directory dirp, calling filter() on each directory entry.  Entries for which filter() returns nonzero are stored in strings allocated via malloc(3), sorted using qsort(3) with  the  com‐ parison  function  compar(),  and collected in array namelist which is allocated via malloc(3).  If filter is NULL, all entries are selected.  The alphasort() and versionsort() functions can be used as the  comparison  function  compar().   The  former sorts  directory  entries  using  strcoll(3),  the latter using strverscmp(3) on the strings (*a)->d_name and (*b)->d_name.
+	   函数的作用是：扫描目录dirp，对每个目录项调用filter（）。filter（）返回非零的条目存储在通过malloc（3）分配的字符串中，使用qsort（3）和比较函数compar（）进行排序，并收集在通过malloc（3）分配的数组名称列表中。如果过滤器为空，则选择所有条目。alphasort（）和versionsort（）函数可用作比较函数compar（）。前者使用strcoll（3）对目录项进行排序，后者使用字符串（*a）->d_name和（*b）->d_name上的strverscmp（3）对目录项进行排序。
+
+   scandirat()
+       The scandirat() function operates in exactly the same way as scandir(), except for the differences  described
+       here.
+
+       If  the  pathname  given in dirp is relative, then it is interpreted relative to the directory referred to by the file descriptor dirfd (rather than relative to the current working directory of the calling  process,  as is done by scandir() for a relative pathname).
+
+       If dirp is relative and dirfd is the special value AT_FDCWD, then dirp is interpreted relative to the current working directory of the calling process (like scandir()).
+
+       If dirp is absolute, then dirfd is ignored.
+
+	   如果dirp中给出的路径名是相对的，那么它将相对于文件描述符dirfd引用的目录进行解释（而不是相对于调用进程的当前工作目录，就像scandir（）对相对路径名所做的那样）。
+
+	   如果dirp是相对的，dirfd是_FDCWD处的特殊值，那么dirp将相对于调用进程的当前工作目录进行解释（如scandir（）。
+
+	   如果dirp是绝对的，则忽略dirfd。
+
+       See openat(2) for an explanation of the need for scandirat().
+
+RETURN VALUE
+       The scandir() function returns the number of directory entries selected.  On error, -1 is returned, with  er‐
+       rno set to indicate the cause of the error.
+
+       The  alphasort()  and  versionsort() functions return an integer less than, equal to, or greater than zero if
+       the first argument is considered to be respectively less than, equal to, or greater than the second.
+
+ERRORS
+       ENOENT The path in dirp does not exist.
+
+       ENOMEM Insufficient memory to complete the operation.
+
+       ENOTDIR
+              The path in dirp is not a directory.
+
+       The following additional errors can occur for scandirat():
+
+       EBADF  dirfd is not a valid file descriptor.
+
+       ENOTDIR
+              dirp is a relative path and dirfd is a file descriptor referring to a file other than a directory.
+
+VERSIONS
+       versionsort() was added to glibc in version 2.1.
+
+       scandirat() was added to glibc in version 2.15.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────────┬───────────────┬────────────────┐
+       │Interface                  │ Attribute     │ Value          │
+       ├───────────────────────────┼───────────────┼────────────────┤
+       │scandir(), scandirat()     │ Thread safety │ MT-Safe        │
+       ├───────────────────────────┼───────────────┼────────────────┤
+       │alphasort(), versionsort() │ Thread safety │ MT-Safe locale │
+       └───────────────────────────┴───────────────┴────────────────┘
+
+CONFORMING TO
+       alphasort(), scandir(): 4.3BSD, POSIX.1-2008.
+
+       versionsort() and scandirat() are GNU extensions.
+
+NOTES
+       Since glibc 2.1, alphasort() calls strcoll(3); earlier it used strcmp(3).
+
+       Before glibc 2.10, the two arguments of alphasort() and versionsort() were typed as const void *.   When  al‐
+       phasort() was standardized in POSIX.1-2008, the argument type was specified as the type-safe const struct di‐
+       rent **, and glibc 2.10 changed the definition of alphasort() (and the nonstandard  versionsort())  to  match
+       the standard.
+
+EXAMPLE
+       The program below prints a list of the files in the current directory in reverse order.
+
+   Program source
+
+       #define _DEFAULT_SOURCE
+       #include <dirent.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+
+       int
+       main(void)
+       {
+           struct dirent **namelist;
+           int n;
+
+           n = scandir(".", &namelist, NULL, alphasort);
+           if (n == -1) {
+               perror("scandir");
+               exit(EXIT_FAILURE);
+           }
+
+           while (n--) {
+               printf("%s\n", namelist[n]->d_name);
+               free(namelist[n]);
+           }
+           free(namelist);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       closedir(3),  fnmatch(3),  opendir(3),  readdir(3),  rewinddir(3), seekdir(3), strcmp(3), strcoll(3), strver‐
+       scmp(3), telldir(3)
+
+COLOPHON
+       This page is part of release 5.05 of the Linux man-pages project.  A description of the project,  information
+       about    reporting    bugs,    and    the    latest    version    of    this    page,   can   be   found   at
+       https://www.kernel.org/doc/man-pages/.
+
+GNU                                                  2017-09-15                                           SCANDIR(3)
