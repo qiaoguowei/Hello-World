@@ -1,10 +1,27 @@
 #include <iostream>
 #include <stdlib.h>
+#include <time.h>
+
+int with_srand()
+{
+	int num = rand()%100;
+	return std::move(num);
+}
 
 int main()
 {
-	for(int i = 0; i < 10; i++)
+	int flag = 0;
+	int num = 0;
+	while(1)
 	{
-		std::cout << rand()%10 << std::endl;
+		std::cin >> flag;
+
+		switch(flag)
+		{
+			case 1 :
+				num = with_srand();
+				std::cout << num << std::endl;
+				break;
+		}
 	}
 }

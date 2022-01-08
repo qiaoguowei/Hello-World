@@ -28,6 +28,8 @@ std::string BinToHex(const std::string &strBin, bool bIsUpper)
 
 int main()
 {
-	std::string strHex = BinToHex("109876", true);
+	std::string str1 = "abcd109876";
+	std::string strHex = BinToHex(str1, true);
+	std::cout << str1 << std::endl;
 	std::cout << strHex << std::endl;
 }
