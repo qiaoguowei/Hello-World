@@ -1,0 +1,28 @@
+
+pthread_rwlock_t
+    静态分配，可以赋常值PTHREAD_RWLOCK_INITALIZER
+
+    int pthread_rwlock_rdlock(pthread_rwlock_t *rwptr);
+    int pthread_rwlock_wrlock(pthread_rwlock_t *rwptr);
+    int pthread_rwlock_unlock(pthread_rwlock_t *rwptr);
+
+    int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwptr);
+    int pthread_rwlock_trywrlock(pthread_rwlock_t *rwptr);
+
+    动态分配
+    int pthread_rwlock_init(pthread_rwlock_t *rwptr, const pthread_rwlockattr_t *attr);
+    int pthread_rwlock_destroy(pthread_rwlock_t *rwptr);
+
+    int pthread_rwlockattr_init(pthread_rwlockattr_t *attr);
+    int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
+
+    数据类型pthread_rwlockattr_t 当前定义了的唯一的属性是PTHREAD_PROCESS_SHARED，它指定相应的读写锁将在不同的进程间共享，
+    而不仅仅是在单个进程内的不同线程间共享。以下两个函数分别获取和设置这个属性。
+
+    int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *attr, int *valptr);
+    int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int value);
+    第一个函数在由valptr指向的整数中返回该属性的当前值。第二个函数把该属性的当前值设置为value，其值或为PTHREAD_PROCESS_PRIVATE，
+    或为PTHREAD_PROCESS_SHARED。
+
+
+

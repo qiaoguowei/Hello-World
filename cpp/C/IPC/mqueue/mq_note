@@ -1,0 +1,50 @@
+#include <mqueue.h>
+
+   mqd_t mq_open(const char *name, int oflag, .../ mode_t mode, struct mq_attr *attr/);
+
+   oflag 参数可以是O_RDONLY, O_WRONLY, O_RDWR之一，可能按位或上O_CREAT, O_EXCL或O_NONBLOCK。
+   创建一个新队列时（已指定O_CREAT标志，且所请求的消息队列尚未存在）mode和attr参数是需要的。attr参数用于给新队列指定某些属性。如果它为空指针，那就使用默认属性。
+
+   mq_open的返回值称为消息队列描述符，但它不必是（而且很有可能不是）像文件描述符或套接字描述符这样的短整数。这个值用于其余7个消息队列函数的第一个参数。
+
+
+
+
+   int mq_close(mqd_t mqdes);
+   已打开的消息队列是由mq_close关闭的
+   其功能与关闭一个已打开文件的close函数类似：调用进程可以不再使用该描述符，但其消息队列并不从系统中删除。一个进程终止时，它的所有打开着的消息队列都关闭，就像调用mq_close一样。
+
+
+
+
+   要从系统中删除用作mq_open第一个参数的某个name，必须调用mq_unlink。
+   int mq_unlink(const char *name);
+
+
+
+   int mq_getaddr(mqd_t mqdes, struct mq_attr *attr);
+   int mq_setaddr(mqd_t mqdes, const struct mq_attr *attr, struct mq_attr *oattr);
+        成功返回0，失败返回1
+    struct mq_attr
+    {
+        long mq_flags;      //message queue flag: 0, O_NONBLOCK
+        long mq_maxmsg;     //max number of message allowed on queue
+        long mq_msgsize;    //max size of a message(int bytes)
+        long mq_curmsgs;    //number of message currently on queue
+    };
+
+    mq_open可以设置mq_maxmsg, mq_msgsize
+    mq_setaddr只能设置mq_flags
+
+
+
+    int mq_send(mqd_t mqdes, const char *ptr, size_t len, unsigned int prio);
+    int mq_receive(mqd_t mqdes, const char *ptr, size_t len, unsigned int *priop);
+
+    mq_receive的len参数不能小于能加到所指定队列中的消息的最大大小（该队列mq_attr结构的mq_msgsize成员）。要是len小于该值，mq_receive就立即返回EMSGSIZE错误。
+    mq_send的prio参数是待发消息的优先级，其值必须小于MQ_PRIO_MAX。如果mq_receive的priop参数是一个非空指针，所返回消息的优先级就通过该指针存放。如果应用不必使用优先级不同的消息，那就给mq_send指定值为0的优先级，给mq_receive指定一个空指针作为其最后一个参数。
+
+
+
+
+

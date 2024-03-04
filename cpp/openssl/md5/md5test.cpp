@@ -11,8 +11,9 @@ int main()
 
 	memset(outmd,0,sizeof(outmd));
 	MD5_Init(&ctx);
-	MD5_Update(&ctx,"hel",3);
-	MD5_Update(&ctx,"lo\n",3);
+    char buf[] = "LMF4A289SGExtensionMatcherEncrypt";
+	MD5_Update(&ctx,buf,strlen(buf));
+	//MD5_Update(&ctx,"lo\n",3);
 	MD5_Final(outmd,&ctx);
 	for(i=0;i<16;i<i++)
 	{

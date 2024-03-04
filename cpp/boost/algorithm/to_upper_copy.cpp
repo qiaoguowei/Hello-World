@@ -5,7 +5,7 @@ namespace ba = boost::algorithm;
 
 int main()
 {
-	std::string work_mode = "offline";
+	std::string work_mode = "offline@qq.com";
 	std::string mode = boost::to_upper_copy(work_mode);
 
 	std::cout << "work_mode: " << work_mode << std::endl;

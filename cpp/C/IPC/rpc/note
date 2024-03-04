@@ -1,0 +1,8 @@
+#include <rpc/rpc.h>
+
+    CLIENT *clnt_create(const char *host, unsigned long program, unsigned long versnum, const char *protocol);
+
+    第一个参数既可以是运行我们的服务器的主机的主机名，也可以是它的IP地址
+    第二个参数是程序名
+    第三个参数是版本号，这两者都来自我们的square.x文件
+    第四个参数是我们的协议选择，通常指定为TCP或UDP。

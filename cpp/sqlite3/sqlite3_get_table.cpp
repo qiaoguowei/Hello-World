@@ -210,7 +210,7 @@ END:
 
 int main(int argc, char *argv[])
 {
-	boost::shared_ptr<SqlOperator> so(new SqlOperator("/home/qgw/program/cplusplus/sqlite3/m_name.db"));
+	boost::shared_ptr<SqlOperator> so(new SqlOperator("./m_name.db"));
 	if(!so->init())
 		return -1;
 	if(!so->create_table())

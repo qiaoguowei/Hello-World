@@ -1,0 +1,6 @@
+tr [–c/d/s/t] [SET1] [SET2]
+
+大小写转换:
+-t: truncate-set1，将SET1用SET2替换，一般缺省为-t
+echo "my name is caipengxiang" | tr -t [a-z] [A-Z]
+
