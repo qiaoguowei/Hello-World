@@ -6,7 +6,11 @@ using namespace std;
 
 int main()
 {
+<<<<<<< HEAD
     string str1 = "ZZC9ZJ3CSGExtensionMatcherEncrypt";
+=======
+    string str1 = "asdflkjsadoislejgrejgoiajijjlkdjg";
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
     uint64_t digests[MD5_DIGEST_LENGTH / 8];
     MD5_CTX ctx;
     MD5_Init(&ctx);

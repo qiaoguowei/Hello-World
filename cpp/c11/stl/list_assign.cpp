@@ -12,10 +12,13 @@ void test1()
         first.push_back(i);
     }
 
+<<<<<<< HEAD
     second.push_back(11);
     second.push_back(22);
     second.push_back(33);
 
+=======
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
     second.assign(first.begin(), first.end());
 
     first.clear();
@@ -49,7 +52,11 @@ void test2()
 
 int main()
 {
+<<<<<<< HEAD
     test1();
+=======
+    test2();
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 }
 
 

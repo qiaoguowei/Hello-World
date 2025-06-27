@@ -5,7 +5,11 @@ int main()
     int weight_array[] = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
     std::cout << sizeof(weight_array) / sizeof(int) << std::endl;
 
+<<<<<<< HEAD
     std::string identify_card_str = "141124199311170058";
+=======
+    std::string identify_card_str = "360502199905107116";
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
     int sum = 0;
     for (int i = 0; i < identify_card_str.size() - 1; ++i)
     {

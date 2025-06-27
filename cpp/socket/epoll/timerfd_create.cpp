@@ -76,7 +76,10 @@ int main()
                 else
                 {
                     cout << buf << endl;
+<<<<<<< HEAD
                     cout << "11111" << std::endl;
+=======
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
                 }
                 cout << "timeout......" << endl;
             }

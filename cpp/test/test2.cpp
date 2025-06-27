@@ -5,6 +5,7 @@ using namespace std;
 
 int main()
 {
+<<<<<<< HEAD
 #if 0
     char Array[2000] = {'0'};
     char *p = Array;
@@ -14,4 +15,9 @@ int main()
 
     std::cout << a << std::endl;
     std::cout << a.size() << std::endl;
+=======
+    char Array[2000] = {'0'};
+    char *p = Array;
+    cout << strlen(p) << endl;
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 }

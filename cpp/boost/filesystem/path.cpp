@@ -58,9 +58,15 @@ void m_stem()
 
 int main()
 {
+<<<<<<< HEAD
     m_replace_extension();
 	//m_stem();
     //test2();
+=======
+    //m_replace_extension();
+	//m_stem();
+    test2();
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 }
 
 

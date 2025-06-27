@@ -3,6 +3,7 @@
 
 using namespace std;
 
+<<<<<<< HEAD
 void test1()
 {
     std::string client_id = "7a6ed187-920a-430c-8dfd-9b36be225613";
@@ -21,4 +22,11 @@ void test2()
 int main()
 {
     test2();
+=======
+int main()
+{
+    string str = ";matched policy uuid: []";
+
+    cout << str << endl;
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 }

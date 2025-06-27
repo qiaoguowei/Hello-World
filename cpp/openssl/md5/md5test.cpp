@@ -11,7 +11,11 @@ int main()
 
 	memset(outmd,0,sizeof(outmd));
 	MD5_Init(&ctx);
+<<<<<<< HEAD
     char buf[] = "PassWord-test-0419SGExtensionMatcherEncrypt";
+=======
+    char buf[] = "LMF4A289SGExtensionMatcherEncrypt";
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 	MD5_Update(&ctx,buf,strlen(buf));
 	//MD5_Update(&ctx,"lo\n",3);
 	MD5_Final(outmd,&ctx);

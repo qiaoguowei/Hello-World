@@ -1,7 +1,10 @@
 #include <iostream>
 #include <queue>
 
+<<<<<<< HEAD
 #if 0
+=======
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 template <typename T>
 class CompirePriority
 {
@@ -16,6 +19,7 @@ int main()
 {
     std::priority_queue<std::string, std::vector<std::pair<int, std::string>>, CompirePriority<std::string>> m_queue;
 }
+<<<<<<< HEAD
 #endif
 
 /*
@@ -81,3 +85,5 @@ int main()
 
 
 
+=======
+>>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
