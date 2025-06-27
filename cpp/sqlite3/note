@@ -1,0 +1,34 @@
+PRAGMA synchronous = OFF 
+	在改模式下，某些操作会比替他情况下快50倍。sqlite从操作系统取得数据后会立即进行处理而不会暂停。
+	如果使用sqlite的应用程序崩溃，数据将是安全的。但如果在数据写入磁盘之前，操作系统死机或机器断电，数据库文件可能会破坏。
+	
+
+create TRIGGER if not exists delChan AFTER DELETE ON ucsc_channel for each row 
+begin
+	delete from xxx where ucscID = OLD.ucscID;
+end
+	创建触发器，当表ucsc_channel删除数据后，删除表xxx对应的数据
+
+
+int sqlite3_busy_handle(sqlite3*, int(*)(void *, int), void *);
+	第一个参数是当你调用sqlite_busy_handle函数时传递给它的一个void*的参数的拷贝；第二个参数是这次锁事件，该回调函数被调用的次数。
+	如果回调函数返回０时，将不再尝试再次访问数据库而返回SQLITE_BUSY或者SQLITE_IOERR_BLOCKED。
+	如果回调函数返回非０,　将会不断尝试操作数据库。
+	程序运行过程中，如果有其他进程或者线程在读写数据库，那么sqlite3_busy_handler会不断调用回调函数，直到其他进程或者线程释放锁。获得锁之后，不会再调用回调函数，从而向下执行
+
+
+insert or replace：如果不存在就插入，存在就更新
+insert or ignore：如果不存在就插入，存在就忽略
+
+
+    int sqlite3_bind_text(sqlite3_stmt*, int, const char*, int, void(*)(void*));
+
+    sqlite3_bind_*()例程的第一个参数始终是指向从sqlite3_prepare_v2()或其变体返回的sqlite3_stmt对象的指针。
+
+    第二个参数是要设置的SQL参数的索引。最左边的SQL参数索引为1。当多次使用相同的命名SQL参数时，第二次和随后的出现与第一次出现具有相同的索引。如果需要，可以使用sqlite3_bind_parameter_index() API查找命名参数的索引。“?”参数为NNN的值。NNN值必须在1到sqlite3_limit()参数SQLITE_LIMIT_VARIABLE_NUMBER(默认值:32766)之间。
+
+    第三个参数是绑定到形参的值。如果sqlite3_bind_text()或sqlite3_bind_text16()或sqlite3_bind_blob()的第三个参数是NULL指针，则忽略第四个参数，最终结果与sqlite3_bind_null()相同。如果sqlite3_bind_text()的第三个参数不是NULL，那么它应该是一个指向格式良好的UTF8文本的指针。如果sqlite3_bind_text16()的第三个参数不是NULL，那么它应该是一个指向格式良好的UTF16文本的指针。如果sqlite3_bind_text64()的第三个参数不是NULL，那么它应该是一个指向格式良好的unicode字符串的指针，如果第六个参数是SQLITE_UTF8，则该字符串为UTF8，否则为UTF16。
+
+    在那些有第四个参数的例程中，它的值是参数中的字节数。需要明确的是:该值是值中的字节数，而不是字符数。如果sqlite3_bind_text()或sqlite3_bind_text16()的第四个参数为负，则字符串的长度是到第一个零终止符为止的字节数。如果sqlite3_bind_blob()的第四个参数为负，则该行为未定义。如果为sqlite3_bind_text()或sqlite3_bind_text16()或sqlite3_bind_text64()提供了非负的第四个参数，则该参数必须是假设字符串以NUL终止符结束时NUL终止符发生的字节偏移量。如果任何NUL字符出现的字节偏移量小于第四个参数的值，则结果字符串值将包含嵌入的NULs。包含嵌入null的字符串的表达式的结果是未定义的。
+
+    BLOB和字符串绑定接口的第五个参数控制或指示第三个参数引用的对象的生命周期。存在以下三种选择:(1)在SQLite处理完BLOB或字符串后，可以传递一个析构函数来处理它。即使对bind API的调用失败，也会调用析构函数来处理BLOB或字符串，但如果第三个参数是NULL指针或第四个参数是负数，则不会调用析构函数。(2)可以传递特殊的常量SQLITE_STATIC，以表明应用程序仍然负责处理对象。在这种情况下，对象和所提供的指向它的指针必须保持有效，直到准备好的语句完成或相同的SQL参数绑定到其他东西为止，以较早发生的为准。(3)常数SQLITE_TRANSIENT可以被传递，以表明对象将在sqlite3_bind_*()返回之前被复制。在此之前，对象和指向它的指针必须保持有效。然后SQLite将管理其私有副本的生命周期。

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lms>
+    <app>
+        <manager_ip>127.0.0.1</manager_ip>
+        <manager_ipv6>::1</manager_ipv6>
+        <manager_port>8801</manager_port>
+        <default_encode>UTF-8</default_encode>
+        <thrift_threads_num>10</thrift_threads_num>
+        <lms_port>8858</lms_port>
+        <lms_healthy_check>false</lms_healthy_check>
+        <lms_healthy_seconds>120</lms_healthy_seconds>
+        <depend_mc>true</depend_mc>
+        <sync_label_interval>60</sync_label_interval>
+        <import_fpdb_interval>3600</import_fpdb_interval>
+        <import_fpdb_batch_num>1000</import_fpdb_batch_num>
+        <max_oplog_sync>10000</max_oplog_sync>
+        <max_file_download>10000</max_file_download>
+        <max_increment_count>5</max_increment_count>
+        <docker_mode>true</docker_mode>
+        <db_ip_docker>169.254.253.3</db_ip_docker>
+        <db_port_docker>3306</db_port_docker>
+        <db_ip>127.0.0.1</db_ip>
+        <db_port>8859</db_port>
+        <db_user>skyguard</db_user>
+        <db_password>Mysql@SkyGuard253.3</db_password>
+        <wait_db_start_count>10</wait_db_start_count>
+        <mysql_bin_path>/opt/skyguard/ucs/bin</mysql_bin_path>
+        <token_expire>3600</token_expire>
+    </app>
+    <log>
+        <rootLogger>DEBUG, rollingFile, console</rootLogger>
+        <rollingFile_File>var/log/lms.log</rollingFile_File>
+        <rollingFile_MaxFileSize>20971520</rollingFile_MaxFileSize>
+        <rollingFile_ImmediateFlush>true</rollingFile_ImmediateFlush>
+        <rollingFile_MaxBackupIndex>10</rollingFile_MaxBackupIndex>
+        <rollingFile_layout_ConversionPattern>%d [%t] %-5p %.16c %l: - %m%n</rollingFile_layout_ConversionPattern>
+        <level>DEBUG</level>
+        <console_layout_ConversionPattern>%d [%t] %-5p %.16c %l: - %m%n</console_layout_ConversionPattern>
+        <detail_style>false</detail_style>
+        <syslog>
+            <flag>false</flag>
+            <ip>127.0.0.1</ip>
+        </syslog>
+        <redirect_stdout_stderr>false</redirect_stdout_stderr>
+    </log>
+    <web>
+        <protocol>http</protocol>
+        <host>127.0.0.1</host>
+        <port>8080</port>
+    </web>
+</lms>

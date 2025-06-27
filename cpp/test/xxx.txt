@@ -1,0 +1,293 @@
+/*************************************************************************
+	> File Name: CombinedBlockInfo.h
+	> Author: zhangshumin
+	> Mail: zhangshumin@skyguardmis.com
+	> Created Time: Mon 19 Oct 2015 08:39:02 PM HKT
+	> Goal: 
+ ************************************************************************/
+
+#ifndef SKYGUARD_COMBINEDBLOCKINFO_H
+#define SKYGUARD_COMBINEDBLOCKINFO_H
+#include <skyguard/base/common.h>
+#include <skyguard/base/FingerprintingDefinition.h>
+#include <algorithm>
+#include <boost/static_assert.hpp>
+#include <boost/type_traits/is_integral.hpp>
+
+
+SGBASE_BEGIN
+
+#define BLOCKSIZE (204800*8)
+typedef uint64_t BlockID;
+struct BlockInfoEx
+{
+BlockInfoEx(BlockID &id, unsigned char *&data)
+    : mBlockId(id)
+    , mBlockData(data)
+        {
+            
+        }
+    BlockID mBlockId;
+    unsigned char* mBlockData;
+};
+
+class HistogramContext
+{
+public:
+HistogramContext(int resultIndex)
+        : mResultIndex(resultIndex)
+        , mLastCodeIndex(-1)
+        , mStartCodeIndex(-1)
+    {
+        
+    }
+
+    int getLength() const
+    {
+        return mLastCodeIndex - mStartCodeIndex;
+    }
+
+    inline bool update(int currIndex, int &continuousCount)
+    {
+        if (currIndex == (mLastCodeIndex + 1))
+        {
+            mLastCodeIndex = currIndex;
+            return false;
+        }
+        else
+        {
+            continuousCount = mLastCodeIndex - mStartCodeIndex;
+            mLastCodeIndex = currIndex;
+            mStartCodeIndex = currIndex - 1;
+
+            return (continuousCount != 0);
+        }
+    }
+
+    inline bool finalize(int &continuousCount)
+    {
+        continuousCount = mLastCodeIndex - mStartCodeIndex;
+
+        return continuousCount != 0;
+    }
+
+    int mResultIndex;
+    int mLastCodeIndex;
+    int mStartCodeIndex;
+};
+
+typedef sp<HistogramContext> HistogramContextPtr;
+
+class FilterHistogramGenerator
+{
+public:
+    FilterHistogramGenerator(int blockNum)
+    {
+        SG_ASSERT(blockNum > 0);
+        mContexts.resize(blockNum);
+        mBlockIds.reserve(blockNum);
+        mResults.reserve(blockNum);
+    }
+
+    inline bool update(int blockIndex, const BlockID &blockId, int codeIndex, const Code &code)
+    {
+        HistogramContextPtr context = mContexts.at(blockIndex);
+        if (!context)
+        {
+            context.reset(new HistogramContext(mResults.size()));
+            mResults.push_back(FilterBlockMatchResult());
+            mBlockIds.push_back(blockId);
+            mContexts[blockIndex] = context;
+        }
+
+        int resultIndex = context->mResultIndex;
+        FilterBlockMatchResult &result = mResults.at(resultIndex);
+        result.mMatchedCodes.push_back(code);
+        ++result.mCodeCount;
+        int count = 0;
+        if (context->update(codeIndex, count))
+        {
+            ContinuousHitHistogram &histogram = result.mHitHistogram;
+            if (histogram.count(count) == 0)
+            {
+                histogram.insert(std::make_pair(count, 1));
+            }
+            else
+            {
+                ++histogram[count];
+            }
+        }
+
+        return true;
+    }
+
+    bool finalize()
+    {
+        int count = 0;
+        for (auto context: mContexts)
+        {
+            if (context
+                && context->finalize(count))
+            {
+                ContinuousHitHistogram &histogram = mResults.at(context->mResultIndex).mHitHistogram;
+                if (histogram.count(count) == 0)
+                {
+                    histogram.insert(std::make_pair(count, 1));
+                }
+                else
+                {
+                    ++histogram[count];
+                }
+            }
+        }
+
+        return true;
+    }
+
+    inline std::vector<FilterBlockMatchResult> &getResults()
+    {
+        return mResults;
+    }
+
+    inline std::vector<BlockID> &getBlockIds()
+    {
+        return mBlockIds;
+    }
+    
+private:
+    std::vector<HistogramContextPtr> mContexts;
+    std::vector<BlockID> mBlockIds;
+    std::vector<FilterBlockMatchResult> mResults;
+    
+    //std::vector<SimilarityFilterMatchResult> mFilterMatchResult;
+};
+
+typedef sp<FilterHistogramGenerator> FilterHistogramGeneratorPtr;
+
+template <typename T>
+class CombinedBlockInfo
+{
+    BOOST_STATIC_ASSERT(boost::is_integral<T>::value && sizeof(T) <= 8);
+public:
+    CombinedBlockInfo(int baseIndex, int blockSize = BLOCKSIZE)
+        : mBaseIndex(baseIndex), mBlockSize(blockSize)
+    {
+        mBlockData = new T[blockSize];
+        std::fill(mBlockData, mBlockData + blockSize, 0);
+        std::fill(mBlockIndex2BlockId, mBlockIndex2BlockId + sizeof(T) * 8, -1);
+    }
+    ~CombinedBlockInfo()
+    {
+        if(mBlockData)
+        {
+            delete [] mBlockData;
+        }
+    }
+
+    bool insert(const BlockInfoEx &blockInfo, int blockIndex)
+    {
+        if ((blockIndex < mBaseIndex) || (blockIndex >= int(mBaseIndex + sizeof(T) * 8)))
+        {
+            return false;
+        }
+
+        int offset = blockIndex - mBaseIndex;
+        mBlockIndex2BlockId[offset] = blockInfo.mBlockId;
+        T addedBitmap;
+        if (sizeof(T) > 4)
+        {
+            addedBitmap = 1ULL << offset;
+        }
+        else
+        {
+            addedBitmap = 1U << offset;
+        }
+
+        for (int i = 0; i < (mBlockSize / 8); ++i)
+        {
+            uint32_t mask = (uint32_t)blockInfo.mBlockData[i];
+            while (mask)
+            {
+                //int index = 8 - __builtin_ffs(mask) + i * 8;
+                int index = 8 - SG_FFS(mask) + i * 8;
+                mBlockData[index] |= addedBitmap;
+                mask &= (mask - 1);
+            }
+        }
+
+        return true;
+    }
+
+    inline void update(int index1, int index2, int index3, int index4, int codeIndex, Code code, FilterHistogramGeneratorPtr &histogram)
+    {
+        T mask = mBlockData[index1];
+        mask &= mBlockData[index2];
+        mask &= mBlockData[index3];
+        mask &= mBlockData[index4];
+
+        while (mask)
+        {
+            int blockIndex;
+            if (sizeof(T) > 4)
+            {
+                // blockIndex = __builtin_ffsll(uint64_t(mask)) - 1;
+                blockIndex = SG_FFS64(uint64_t(mask)) - 1;
+            }
+            else
+            {
+                // blockIndex = __builtin_ffs(uint32_t(mask)) - 1;
+                blockIndex = SG_FFS(uint32_t(mask)) - 1;
+            }
+            histogram->update(blockIndex + mBaseIndex, mBlockIndex2BlockId[blockIndex], codeIndex, code);
+            mask &= (mask - 1);
+        }
+    }
+    inline T getMask(int index1, int index2, int index3, int index4) const
+    {
+        T mask = mBlockData[index1];
+        mask &= mBlockData[index2];
+        mask &= mBlockData[index3];
+        mask &= mBlockData[index4];
+
+        return mask;
+    }
+
+    inline int getNextBitIndex(T &mask) const
+    {    
+        if (mask == 0)
+            return -1;
+        int blockIndex;
+        if (sizeof(T) > 4)
+        {
+            // blockIndex = __builtin_ffsll(uint64_t(mask)) - 1;
+            blockIndex = SG_FFS64(uint64_t(mask)) - 1;
+        }
+        else
+        {
+            // blockIndex = __builtin_ffs(uint32_t(mask)) - 1;
+            blockIndex = SG_FFS(uint32_t(mask)) - 1;
+        }
+        mask &= (mask - 1);
+
+        return mBaseIndex + blockIndex;
+    }
+
+private:
+    int mBaseIndex;
+    int mBlockSize;
+    BlockID mBlockIndex2BlockId[sizeof(T) * 8];
+    T *mBlockData;
+};
+
+typedef CombinedBlockInfo<uint64_t> CombinedBlockInfo64;
+typedef sp<CombinedBlockInfo64> CombinedBlockInfo64Ptr;
+typedef CombinedBlockInfo<uint32_t> CombinedBlockInfo32;
+typedef sp<CombinedBlockInfo32> CombinedBlockInfo32Ptr;
+typedef CombinedBlockInfo<uint16_t> CombinedBlockInfo16;
+typedef sp<CombinedBlockInfo16> CombinedBlockInfo16Ptr;
+typedef CombinedBlockInfo<uint8_t> CombinedBlockInfo8;
+typedef sp<CombinedBlockInfo8> CombinedBlockInfo8Ptr;
+
+SGBASE_END
+
+#endif //SKYGUARD_COMBINEDBLOCKINFO_H

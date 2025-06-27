@@ -1,0 +1,7 @@
+total 32
+-rwxrwxr-x 1 qgw qgw 17360 Oct  9 16:47 a.out
+-rw-rw-r-- 1 qgw qgw   510 Oct  9 16:47 chmod.cpp
+-rw-rw-r-- 1 qgw qgw     0 Oct  9 17:39 filelist
+-rw-rw-r-- 1 qgw qgw   843 Oct  9 17:38 rename.cpp
+-rw-r--r-- 1 qgw qgw    28 Oct  9 16:46 test
+/home/qgw/my_github/Hello-World/cpp/C/FilePropertyOp

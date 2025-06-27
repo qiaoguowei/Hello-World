@@ -2,7 +2,9 @@
 #include <assert.h>
 #include <boost/asio/ip/tcp.hpp>
 
-int main()
+using namespace std;
+
+void test1()
 {
 	boost::asio::ip::address addr;
 
@@ -12,3 +14,35 @@ int main()
 	addr = addr.from_string("ab::12:34:56");
 	assert(addr.is_v6());
 }
+
+void test2()
+{
+    try
+    {
+    std::string hostName = "login.microsoftonline.com";
+    auto ad = boost::asio::ip::address::from_string(hostName);
+    if (ad.is_v6())
+        cout << hostName << endl;
+    else
+        cout << hostName << endl;
+    }
+    catch (const std::exception &e)
+    {
+        cout << "throw: " << e.what() << endl;
+    }
+}
+
+int main()
+{
+    test2();
+}
+
+
+
+
+
+
+
+
+
+

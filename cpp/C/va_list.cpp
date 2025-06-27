@@ -3,11 +3,10 @@
 void showall() { return; }
 
 template <typename R1 ,typename...  Args>
-
-void showall(R1 var, Args...args) {
+void showall(R1&& var, Args&&...args) {
 
 	std::cout << var << std::endl;
-	showall(std::forward<Args&&>(args)...);
+	showall(std::forward<Args>(args)...);
 }
 
 int main(int argc, char * args[]) {

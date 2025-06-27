@@ -5,7 +5,7 @@
 int with_srand()
 {
 	int num = rand()%100;
-	return std::move(num);
+	return num;
 }
 
 int main()

@@ -1,0 +1,28 @@
+{
+    "message": "success", 
+    "data": {
+        "deviceConfig":{
+            "printerAgentServerDebug": false, 
+            "_d_type": "advance_debug", 
+            "spsApprovalDebug": false, 
+            "spsTransferDebug": false, 
+            "speDebug": true, 
+            "spsPemDebug": false, 
+            "dsaDebug": true, 
+            "spsWebserviceDebug": false, 
+            "spsIncidentDebug": false, 
+            "ocrDebug": true, 
+            "fpdbDebug": false, 
+            "deviceType": 1, 
+            "deviceId": "fdbe65c7-fe6d-6a21-6254-88b48f63760d", 
+            "dmDebug": false, 
+            "webServerDebug": false, 
+            "configVersion": -1, 
+            "type": "DEBUG_CONFIGURE", 
+            "xidDebug": false, 
+            "mcDebug": false
+        }
+    }, 
+    "mixItem" : [],
+    "responseCode": 0
+}

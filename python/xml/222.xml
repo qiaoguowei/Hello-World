@@ -1,0 +1,44 @@
+<ContentAnalysisEngine>
+    <components>
+        <component name="ContentAnalyticEngine">
+            <feature name="LocalScan">
+                <enabled>true</enabled>
+                <mode>OR</mode>
+                <enginelist>QAVLib,QAVService,AviraLib</enginelist>
+                <ScanConfigFile>/opt/skyguard/ucs/var/cache/scan_setting.json</ScanConfigFile>
+                <engines>
+                    <engine name="AviraLib">
+                        <enabled>false</enabled>
+                        <engineLibName>libAVEngine-AviraLib.so</engineLibName>
+                        <productID>11571</productID>
+                        <sdkPath>lib/avira</sdkPath>
+                        <archiveMaxSize>1073741824</archiveMaxSize>
+                        <archiveMaxLevels>20</archiveMaxLevels>
+                        <archiveMaxRatio>150</archiveMaxRatio>
+                        <archiveMaxCount>200</archiveMaxCount>
+                        <archiveMaxRec>20</archiveMaxRec>
+                        <archiveScan>1</archiveScan>
+                        <detectAdspy>1</detectAdspy>
+                        <detectAdware>1</detectAdware>
+                        <detectAppl>0</detectAppl>
+                        <detectBdc>1</detectBdc>
+                        <detectDial>1</detectDial>
+                        <detectGame>0</detectGame>
+                        <detectHiddenExt>1</detectHiddenExt>
+                        <detectJoke>0</detectJoke>
+                        <detectPfs>1</detectPfs>
+                        <detectPhish>1</detectPhish>
+                        <detectPua>1</detectPua>
+                        <detectSpr>0</detectSpr>
+                        <savapiNotifyOfficeMacro>0</savapiNotifyOfficeMacro>
+                        <savapiNotifyOfficeMacroAutostart>0</savapiNotifyOfficeMacroAutostart>
+                        <heurMacro>1</heurMacro>
+                        <heurLevel>2</heurLevel>
+                        <timeout>300</timeout>
+                        <repair>0</repair>
+                    </engine>
+                </engines>
+            </feature>
+        </component>
+    </components>
+</ContentAnalysisEngine>

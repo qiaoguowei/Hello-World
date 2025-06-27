@@ -1,0 +1,378 @@
+TCHDB *tchdbnew(void)
+这个函数实现的功能是：分配一个TCHDB类型的数据文件对象，我们以后的操作都是基于这个对象的，它的功能有点类似于我们打开文件后获得的那个文件描述符，不过TCHDB比文件描述符要复杂的多，下面是代码和注释：
+
+TCHDB *tchdbnew(void)
+{
+    TCHDB *hdb;
+    TCMALLOC(hdb, sizeof(*hdb));  // 动态分配一个TCHDB对象
+    tchdbclear(hdb); // 初始化TCHDB对象
+    return hdb;
+}
+
+/* Clear all members.
+   'hdb' specifies the hash database object. */
+static void tchdbclear(TCHDB *hdb)
+{
+    assert(hdb);
+    hdb->mmtx = NULL;
+    hdb->rmtxs = NULL;
+    hdb->dmtx = NULL;
+    hdb->wmtx = NULL;
+    hdb->eckey = NULL;
+    hdb->rpath = NULL;
+    hdb->type = TCDBTHASH; // 类型为hash结构的数据文件
+    hdb->flags = 0;
+    hdb->bnum = HDBDEFBNUM; // 默认hash桶大小131071
+    hdb->apow = HDBDEFAPOW;
+    hdb->fpow = HDBDEFFPOW;
+    hdb->opts = 0;
+    hdb->path = NULL;
+    hdb->fd = -1;
+    hdb->omode = 0;
+    hdb->rnum = 0;
+    hdb->fsiz = 0;
+    hdb->frec = 0;
+    hdb->dfcur = 0;
+    hdb->iter = 0;
+    hdb->map = NULL;
+    hdb->msiz = 0;
+    hdb->xmsiz = HDBDEFXMSIZ; // 默认mmap大小64M
+    hdb->xfsiz = 0;
+    hdb->ba32 = NULL;
+    hdb->ba64 = NULL;
+    hdb->align = 0;
+    hdb->runit = 0;
+    hdb->zmode = false;
+    hdb->fbpmax = 0;
+    hdb->fbpool = NULL;
+    hdb->fbpnum = 0;
+    hdb->fbpmis = 0;
+    hdb->async = false;
+    hdb->drpool = NULL;
+    hdb->drpdef = NULL;
+    hdb->drpoff = 0;
+    hdb->recc = NULL;
+    hdb->rcnum = 0;
+    hdb->enc = NULL;
+    hdb->encop = NULL;
+    hdb->dec = NULL;
+    hdb->decop = NULL;
+    hdb->ecode = TCESUCCESS;
+    hdb->fatal = false;
+    hdb->inode = 0;
+    hdb->mtime = 0;
+    hdb->dfunit = 0;
+    hdb->dfcnt = 0;
+    hdb->tran = false;
+    hdb->walfd = -1;
+    hdb->walend = 0;
+    hdb->dbgfd = -1;
+    hdb->cnt_writerec = -1;
+    hdb->cnt_reuserec = -1;
+    hdb->cnt_moverec = -1;
+    hdb->cnt_readrec = -1;
+    hdb->cnt_searchfbp = -1;
+    hdb->cnt_insertfbp = -1;
+    hdb->cnt_splicefbp = -1;
+    hdb->cnt_dividefbp = -1;
+    hdb->cnt_mergefbp = -1;
+    hdb->cnt_reducefbp = -1;
+    hdb->cnt_appenddrp = -1;
+    hdb->cnt_deferdrp = -1;
+    hdb->cnt_flushdrp = -1;
+    hdb->cnt_adjrecc = -1;
+    hdb->cnt_defrag = -1;
+    hdb->cnt_shiftrec = -1;
+    hdb->cnt_trunc = -1;
+    TCDODEBUG(hdb->cnt_writerec = 0);
+    TCDODEBUG(hdb->cnt_reuserec = 0);
+    TCDODEBUG(hdb->cnt_moverec = 0);
+    TCDODEBUG(hdb->cnt_readrec = 0);
+    TCDODEBUG(hdb->cnt_searchfbp = 0);
+    TCDODEBUG(hdb->cnt_insertfbp = 0);
+    TCDODEBUG(hdb->cnt_splicefbp = 0);
+    TCDODEBUG(hdb->cnt_dividefbp = 0);
+    TCDODEBUG(hdb->cnt_mergefbp = 0);
+    TCDODEBUG(hdb->cnt_reducefbp = 0);
+    TCDODEBUG(hdb->cnt_appenddrp = 0);
+    TCDODEBUG(hdb->cnt_deferdrp = 0);
+    TCDODEBUG(hdb->cnt_flushdrp = 0);
+    TCDODEBUG(hdb->cnt_adjrecc = 0);
+    TCDODEBUG(hdb->cnt_defrag = 0);
+    TCDODEBUG(hdb->cnt_shiftrec = 0);
+    TCDODEBUG(hdb->cnt_trunc = 0);
+}
+
+
+二、tchdbopen函数
+该函数打开指定的数据文件，并将打开的数据文件信息添加到TCHDB结构体中，打开过程中会检查数据文件是否为空等操作
+
+/* Open a database file and connect a hash database object. */
+bool tchdbopen(TCHDB *hdb, const char *path, int omode)
+{
+    assert(hdb && path);
+    if(!HDBLOCKMETHOD(hdb, true)) 
+        return false; // 获得调用函数锁
+    if(hdb->fd >= 0)
+    { // 若数据文件已打开，则返回出错
+        tchdbsetecode(hdb, TCEINVALID, __FILE__, __LINE__, __func__); // 设置错误码
+        HDBUNLOCKMETHOD(hdb);
+        return false;
+    }
+    char *rpath = tcrealpath(path); // 取得数据文件的标准化路径
+    if(!rpath)
+    {
+        int ecode = TCEOPEN;
+        switch(errno)
+        {
+            case EACCES: ecode = TCENOPERM; break;
+            case ENOENT: ecode = TCENOFILE; break;
+            case ENOTDIR: ecode = TCENOFILE; break;
+        }
+        tchdbsetecode(hdb, ecode, __FILE__, __LINE__, __func__);
+        HDBUNLOCKMETHOD(hdb);
+        return false;
+    }
+    if(!tcpathlock(rpath))
+    { // 锁定文件路径， 以防止在操作过程中文件消失
+        tchdbsetecode(hdb, TCETHREAD, __FILE__, __LINE__, __func__);
+        TCFREE(rpath);
+        HDBUNLOCKMETHOD(hdb);
+        return false;
+    }
+    bool rv = tchdbopenimpl(hdb, path, omode); // 具体打开操作
+    if(rv)
+    { // 打开数据文件成功，保存数据文件的标准化路径
+        hdb->rpath = rpath;
+    } 
+    else 
+    {
+        tcpathunlock(rpath);
+        TCFREE(rpath);
+    }
+    HDBUNLOCKMETHOD(hdb);
+    return rv; // 返回打开是否成功
+}
+
+
+函数tchdbopen仅仅做简单的一些检查转换操作，具体打开操作在函数tchdbopenimpl中，我们来看看代码：
+/* Open a database file and connect a hash database object.
+   `hdb' specifies the hash database object.
+   `path' specifies the path of the database file.
+   `omode' specifies the connection mode.
+   If successful, the return value is true, else, it is false. */
+
+static bool tchdbopenimpl(TCHDB *hdb, const char *path, int omode)
+{
+    assert(hdb && path);
+    int mode = O_RDONLY;
+    if(omode & HDBOWRITER)
+    {                           // 取得数据文件打开模式
+        mode = O_RDWR;
+        if(omode & HDBOCREAT) 
+            mode |= O_CREAT;
+    }
+    int fd = open(path, mode, HDBFILEMODE); // 调用库函数open打开数据文件，这里可以看到，文件仅仅是普通文件而已。
+    if(fd < 0)
+    {
+        int ecode = TCEOPEN;
+        switch(errno)
+        {
+            case EACCES: ecode = TCENOPERM; break;
+            case ENOENT: ecode = TCENOFILE; break;
+            case ENOTDIR: ecode = TCENOFILE; break;
+        }
+        tchdbsetecode(hdb, ecode, __FILE__, __LINE__, __func__);
+        return false;
+    }
+    if(!(omode & HDBONOLCK)){ // 检查是否需要锁定打开的数据文件，这里用的是advisory lock,通过fcntl实现
+        if(!tclock(fd, omode & HDBOWRITER, omode & HDBOLCKNB))
+        {
+            tchdbsetecode(hdb, TCELOCK, __FILE__, __LINE__, __func__);
+            close(fd);
+            return false;
+        }
+    }
+    if((omode & HDBOWRITER) && (omode & HDBOTRUNC)){ // 写操作，是否需要截短文件?
+        if(ftruncate(fd, 0) == -1)
+        {
+            tchdbsetecode(hdb, TCETRUNC, __FILE__, __LINE__, __func__);
+            close(fd);
+            return false;
+        }
+        if(!tchdbwalremove(hdb, path))
+        {
+            close(fd);
+            return false;
+        }
+    }
+    struct stat sbuf;
+    if(fstat(fd, &sbuf) == -1 || !S_ISREG(sbuf.st_mode))
+    {                                                       // 获得文件属性信息，判断文件是否为普通文件
+        tchdbsetecode(hdb, TCESTAT, __FILE__, __LINE__, __func__);
+        close(fd);
+        return false;
+    }
+    char hbuf[HDBHEADSIZ];
+    if((omode & HDBOWRITER) && sbuf.st_size < 1)
+    {   // 写模式下，是否为空文件?
+        // 写模式下为空文件，则这里开始构造默认情况下的数据文件头信息，从这里我们也可以推测出数 
+        // 据文件头在磁盘文件中的存放格式，它的大小为256字节，参见HDBHEADSIZ。
+        hdb->flags = 0;  // 默认flags为0
+        hdb->rnum = 0;     // 当前记录为0
+        uint32_t fbpmax = 1 << hdb->fpow; // 空闲块池默认大小
+        uint32_t fbpsiz = HDBFBPBSIZ + fbpmax * HDBFBPESIZ; // 默认空闲块池大小
+        int besiz = (hdb->opts & HDBTLARGE) ? sizeof(int64_t) : sizeof(int32_t); // hash桶数组中每个元素大小
+        hdb->align = 1 << hdb->apow; // 默认对齐字节
+        hdb->fsiz = HDBHEADSIZ + besiz * hdb->bnum + fbpsiz; // 不包含填充区的文件大小
+        hdb->fsiz += tchdbpadsize(hdb, hdb->fsiz); // 包含填充区的文件大小
+        hdb->frec = hdb->fsiz; // 数据文件中第一个记录在文件中的偏移
+        tchdbdumpmeta(hdb, hbuf); // 将数据文件头信息拷贝到hbuf
+        bool err = false;
+        if(!tcwrite(fd, hbuf, HDBHEADSIZ)) err = true; // 将数据文件头信息写入数据文件
+        char pbuf[HDBIOBUFSIZ];
+        memset(pbuf, 0, HDBIOBUFSIZ);
+        uint64_t psiz = hdb->fsiz - HDBHEADSIZ;
+        while(psiz > 0)
+        { // 这个循环将数据文件头部的填充区置位0，有什么用?可能是后面写入新记录时会读到这个区域...
+            if(psiz > HDBIOBUFSIZ){
+                if(!tcwrite(fd, pbuf, HDBIOBUFSIZ)) err = true;
+                psiz -= HDBIOBUFSIZ;
+            } else {
+                if(!tcwrite(fd, pbuf, psiz)) err = true;
+                psiz = 0;
+            }
+        }
+        if(err)
+        {
+            tchdbsetecode(hdb, TCEWRITE, __FILE__, __LINE__, __func__);
+            close(fd);
+            return false;
+        }
+        sbuf.st_size = hdb->fsiz; // 改写文件属性信息，改写文件大小
+    }
+    if(lseek(fd, 0, SEEK_SET) == -1)
+    {                                   // 重置文件指针到数据文件头部
+        tchdbsetecode(hdb, TCESEEK, __FILE__, __LINE__, __func__);
+        close(fd);
+        return false;
+    }
+    if(!tcread(fd, hbuf, HDBHEADSIZ))
+    {                                   // 读出文件头信息，保证hbuf中含有文件头信息
+        tchdbsetecode(hdb, TCEREAD, __FILE__, __LINE__, __func__);
+        close(fd);
+        return false;
+    }
+    int type = hdb->type;
+    tchdbloadmeta(hdb, hbuf); // 将文件头信息copy到TCHDB结构体中，即初始化TCHDB结构体某些成员
+
+    // 若文件被标识为已打开，很可能前面针对文件的操作在事务中被中断了，这里将数据文件从wal文件中恢复回来，
+    // 相当于取消了前面那个事务,目前我们只要知道wal文件用于事务即可，这个函数后面我会补充分析。
+    if((hdb->flags & HDBFOPEN) && tchdbwalrestore(hdb, path))
+    {
+        if(lseek(fd, 0, SEEK_SET) == -1)
+        {   // 数据文件已恢复，下面需要重新读取头部信息                     
+            tchdbsetecode(hdb, TCESEEK, __FILE__, __LINE__, __func__); 
+            close(fd);
+            return false;
+        }
+        if(!tcread(fd, hbuf, HDBHEADSIZ))
+        { // 重新读出出数据文件头信息
+            tchdbsetecode(hdb, TCEREAD, __FILE__, __LINE__, __func__);
+            close(fd);
+            return false;
+        }
+        tchdbloadmeta(hdb, hbuf);// 重新导出出数据文件头信息
+        if(!tchdbwalremove(hdb, path))
+        {
+            close(fd);
+            return false;
+        }
+    }
+    int besiz = (hdb->opts & HDBTLARGE) ? sizeof(int64_t) : sizeof(int32_t); // hash桶大小
+    size_t msiz = HDBHEADSIZ + hdb->bnum * besiz; // 算出数据文件最小需要mmap的大小,即数据文件头大小加hash同数组大小
+    if(!(omode & HDBONOLCK))
+    {
+        if(memcmp(hbuf, HDBMAGICDATA, strlen(HDBMAGICDATA)) || hdb->type != type ||
+                hdb->frec < msiz + HDBFBPBSIZ || hdb->frec > hdb->fsiz || sbuf.st_size < hdb->fsiz)
+        {
+            tchdbsetecode(hdb, TCEMETA, __FILE__, __LINE__, __func__);
+            close(fd);
+            return false;
+        }
+    }
+    if(((hdb->opts & HDBTDEFLATE) && !_tc_deflate) ||
+            ((hdb->opts & HDBTBZIP) && !_tc_bzcompress) || ((hdb->opts & HDBTEXCODEC) && !hdb->enc))
+    {
+        tchdbsetecode(hdb, TCEINVALID, __FILE__, __LINE__, __func__);
+        close(fd);
+        return false;
+    }
+    size_t xmsiz = (hdb->xmsiz > msiz) ? hdb->xmsiz : msiz; // 数据文件需要mmap的大小，至少为msize
+    if(!(omode & HDBOWRITER) && xmsiz > hdb->fsiz) xmsiz = hdb->fsiz; // mmap的大小不超过文件大小
+    void *map = mmap(0, xmsiz, PROT_READ | ((omode & HDBOWRITER) ? PROT_WRITE : 0),
+            MAP_SHARED, fd, 0); // 映射指定大小数据文件
+    if(map == MAP_FAILED){
+        tchdbsetecode(hdb, TCEMMAP, __FILE__, __LINE__, __func__);
+        close(fd);
+        return false;
+    }
+    hdb->fbpmax = 1 << hdb->fpow; // 空闲块池区域最大数量
+    if(omode & HDBOWRITER){ // 写模式，分配空闲块池
+        TCMALLOC(hdb->fbpool, hdb->fbpmax * HDBFBPALWRAT * sizeof(HDBFB));
+    } else {
+        hdb->fbpool = NULL; // 非写模式，不分配空闲块池，节约内存
+    }
+    hdb->fbpnum = 0; // 其它值的初始化
+    hdb->fbpmis = 0;
+    hdb->async = false;
+    hdb->drpool = NULL;
+    hdb->drpdef = NULL;
+    hdb->drpoff = 0;
+    hdb->recc = (hdb->rcnum > 0) ? tcmdbnew2(hdb->rcnum * 2 + 1) : NULL; // record的缓冲区大小计算
+    hdb->path = tcstrdup(path); // 复制一份数据文件raw路径，没有经过标准化处理的路径。
+    hdb->fd = fd; // 从这里开始复制一些值到TCHDB结构体中
+    hdb->omode = omode;
+    hdb->dfcur = hdb->frec;
+    hdb->iter = 0;
+    hdb->map = map;
+    hdb->msiz = msiz;
+    hdb->xfsiz = 0;
+    if(hdb->opts & HDBTLARGE){ // 判断使用32位还是64为的hash桶
+        hdb->ba32 = NULL;
+        hdb->ba64 = (uint64_t *)((char *)map + HDBHEADSIZ);
+    } else {
+        hdb->ba32 = (uint32_t *)((char *)map + HDBHEADSIZ);
+        hdb->ba64 = NULL;
+    }
+    hdb->align = 1 << hdb->apow;
+    hdb->runit = tclmin(tclmax(hdb->align, HDBMINRUNIT), HDBIOBUFSIZ);
+    hdb->zmode = (hdb->opts & HDBTDEFLATE) || (hdb->opts & HDBTBZIP) ||
+        (hdb->opts & HDBTTCBS) || (hdb->opts & HDBTEXCODEC);
+    hdb->ecode = TCESUCCESS;
+    hdb->fatal = false;
+    hdb->inode = (uint64_t)sbuf.st_ino; // 数据文件的inode号
+    hdb->mtime = sbuf.st_mtime; // 数据文件修改时间
+    hdb->dfcnt = 0;
+    hdb->tran = false;
+    hdb->walfd = -1;
+    hdb->walend = 0;
+    if(hdb->omode & HDBOWRITER){ // 若是写模式，并且当前数据文件不处于打开状态，则从数据文件中读取fbp信息，在内存中建立fbp区域
+        bool err = false;
+        if(!(hdb->flags & HDBFOPEN) && !tchdbloadfbp(hdb)) err = true;
+        memset(hbuf, 0, 2);
+        if(!tchdbseekwrite(hdb, hdb->msiz, hbuf, 2)) err = true;
+        if(err){
+            TCFREE(hdb->path);
+            TCFREE(hdb->fbpool);
+            munmap(hdb->map, xmsiz);
+            close(fd);
+            hdb->fd = -1;
+            return false;
+        }
+        tchdbsetflag(hdb, HDBFOPEN, true); // 设置数据文件已被打开标志
+    }
+    return true; // 打开成功
+}
+
+

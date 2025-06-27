@@ -1,0 +1,64 @@
+System V 消息队列
+
+msgget函数
+    #include <sys/msg.h>
+
+    int msgget(key_t key, int oflag);
+        成功返回非负标识符，出错则为-1
+
+    返回值是一个整数标识符，其他三个msg函数就用它来指代该队列。它是基于指定的key产生的，而key既可以是ftok的返回值，也可以是常值IPC_PRIVATE。
+
+    oflag是读写权限的组合。他还可以与IPC_CREAT或IPC_CREAT|IPC_EXCL按位或
+
+    当创建一个新消息队列时，msqid_ds结构的如下成员被初始化。
+    msg_perm结构的uid和cuid成员被设置成当前进程的有效用户ID，gid和cgid成员被设置成当前进程的有效组ID。
+    oflag中的读写权限位存放在msg_perm.mode中。
+    msg_qnum、msg_lspid、msg_lrpid、msg_stime和msg_rtime被设置为0
+    msg_ctime被设置为当前时间
+    msg_qbytes被设置成系统限制值。
+
+msgsnd函数
+    使用msgget打开一个消息队列后，我们使用msgsnd往其上放置一个消息。
+
+    int msgsnd(int msqid, const void *ptr, size_t length, int flag);
+        成功返回0，失败返回-1
+
+    其中msqid是msgget返回的标识符。ptr是一个结构指针，该结构具有如下的模板，它定义在<sys/msg.h>中
+    struct msgbuf
+    {
+        long mtype;     /*message type must be > 0 */
+        char mtext[1];  /*message data */
+    };
+
+    消息类型必须大于0，因为对于msgrcv函数来说，非正的消息类型用作特殊的指示器，我们将在下一节讲述。
+
+    举例来说，如果某个应用需要交换由一个16位整数后跟一个8字节字符数组构成的消息，那它可以定义自己的结构如下：
+    #define MY_DATA 8
+
+    typedef struct my_msgbuf
+    {
+        long        mtype;
+        int16_t     mshort;         //start of message data
+        char        mchar[MY_DATA];
+    } Message;
+
+    msgsnd的length参数以字节为单位指定待发送消息的长度。这是位于长整数消息类型之后的用户自定义数据的长度。该长度可以是0。在刚刚给出的例子中，长度可以传递成sizeof(Message) - sizeof(long)。
+    flag参数既可以是0，也可以是IPC_NOWAIT标志使得msgsnd调用非阻塞；如果没有存放新消息的可用空间，该函数就马上返回。这个条件可能发生的情形包括：
+        在指定队列中已有太多的字节（对应该队列的msgid_ds结构中的msg_qbytes值）。
+        在系统范围存在太多消息。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -51,14 +51,16 @@ void m_stem()
 	std::cout << boost::filesystem::basename(boost::filesystem::path("/foo/ssss")) << std::endl;
 	std::cout << boost::filesystem::basename(boost::filesystem::path("/foo/ssss.txt.cpp")) << std::endl;
 	boost::filesystem::path p = "foo.bar.baz.tar";
+	cout << p.string() << endl;
 	for (; !p.extension().empty(); p = p.stem())
 		std::cout << p.extension() << '\n';
 }
 
 int main()
 {
-	//m_replace_extension();
-	m_stem();
+    m_replace_extension();
+	//m_stem();
+    //test2();
 }
 
 

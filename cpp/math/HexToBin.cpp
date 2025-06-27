@@ -40,7 +40,7 @@ std::string HexToBin(const std::string &strHex)
 
 int main()
 {
-	std::string str1 = "61626364313039383736";
+	std::string str1 = "593AAAF0CB3F311888747B6F6687767C7A8A776768786B76";
 	std::string strBin = HexToBin(str1);
 	std::cout << str1 << std::endl;
 	std::cout << strBin << std::endl;

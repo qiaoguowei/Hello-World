@@ -15,6 +15,9 @@ int main ()
 
 	std::cout << "myint contains: " << myint << '\n';
 	std::cout << "mychar contains: " << mychar << '\n';
+	myint += 1;
+	std::cout << std::get<0>(mytuple) << std::endl;
+	std::cout << "myint contains: " << myint << '\n';
 
 	return 0;
 }
