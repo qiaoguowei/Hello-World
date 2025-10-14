@@ -28,7 +28,6 @@ void test1()
     std::cout << "size(): " << interfaces.size() << std::endl;
 }
 
-<<<<<<< HEAD
 void test2()
 {
     std::string period = "1";
@@ -41,11 +40,9 @@ void test2()
     }
 }
 
-=======
->>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 int main()
 {
-#if 0
+#if 1
     std::string str = "Samus,Link.Zelda::Mario-Luigi+zelda";
     std::list<std::string> vc;
     boost::split(vc, str, boost::is_any_of(",.:-+"), boost::token_compress_on);
@@ -56,10 +53,7 @@ int main()
     }
     std::cout << std::endl;
 #else
-<<<<<<< HEAD
     test2();
-=======
     test1();
->>>>>>> 4adb3f20a968faa466b0157e6da162535c178879
 #endif
 }

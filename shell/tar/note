@@ -21,3 +21,21 @@
     -j：有bz2属性,即需要用 bzip2 压缩  
 
 
+# tar.gz
+    tar -czvf archive.tar.gz /path/to/dir
+# tar.bz2
+    tar -cjvf archive.tar.bz2 /path/to/dir
+# tar.xz
+    tar -cJvf archive.tar.xz /path/to/dir
+
+# tar.gz
+    tar -xzvf archive.tar.gz -C /target/path
+# tar.bz2
+    tar -xjvf archive.tar.bz2 -C /target/path
+# tar.xz
+    tar -xJvf archive.tar.xz -C /target/path
+格式        压缩比      速度    适用场景
+tar         1:1         最快    仅需打包，无需压缩
+tar.gz      2:1~3:1     快      日常文件压缩（平衡速度与大小）
+tar.bz2     3:1~4:1     中      高压缩率需求（如备份）
+tar.xz      4:1+        慢      大文件或长期存储
